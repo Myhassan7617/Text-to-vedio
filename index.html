@@ -6,7 +6,7 @@
     <title>AI Text to Video</title>
     
     <style>
-        /* General Setup */
+        /* CSS styles wohi hain, koi tabdeeli nahi */
         :root {
             --color-bg: #121212;
             --color-surface: #1e1e1e;
@@ -36,7 +36,6 @@
             padding: 1rem;
         }
 
-        /* Main Application Container */
         main {
             width: 100%;
             max-width: 600px;
@@ -49,14 +48,12 @@
             gap: 1.5rem;
         }
 
-        /* Header */
         h1 {
             text-align: center;
             color: white;
             font-weight: 600;
         }
 
-        /* Prompt Input Area */
         .prompt-section {
             display: flex;
             flex-direction: column;
@@ -83,7 +80,6 @@
             box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.25);
         }
 
-        /* Generate Button */
         #generate-btn {
             padding: 0.75rem 1.5rem;
             font-size: 1rem;
@@ -105,7 +101,6 @@
             cursor: not-allowed;
         }
 
-        /* Results Area (Loader, Error, Video) */
         .result-section {
             width: 100%;
             min-height: 200px; /* Reserve space */
@@ -118,7 +113,6 @@
             padding: 1rem;
         }
 
-        /* Loading Spinner */
         .loader {
             width: 48px;
             height: 48px;
@@ -134,7 +128,6 @@
             100% { transform: rotate(360deg); }
         }
 
-        /* Video Player */
         #video-container video {
             width: 100%;
             max-width: 100%;
@@ -142,14 +135,12 @@
             background-color: #000;
         }
 
-        /* Error Message */
         #error-message {
             color: var(--color-error);
             font-weight: 500;
             text-align: center;
         }
         
-        /* Utility Class */
         .hidden {
             display: none !important;
         }
@@ -176,23 +167,11 @@
         document.addEventListener('DOMContentLoaded', () => {
             
             // --- Configuration ---
-
-            // !! WARNING: Do NOT expose your API key in client-side code for a real application.
-            // This is for demonstration only. A real app should use a backend server
-            // to securely manage and use the API key.
-            const API_KEY = 'key_ea05f66d0d534ba823b589a866782fbbc516979abacdf7d7026c3a31bca8a988b6857de4ed0e0b013eb2d9c69f06678abbb7faa7c828d1c658f94e5f9b81afa7';
             
-            // This is a placeholder URL. Replace with the actual RunwayML Gen-2 API endpoint.
+            // !! WARNING: API KEY ko YAHAN NA RAKHEIN.
+            // Yeh key public hai. Isko foran delete kar dein.
+            const API_KEY = 'YOUR_API_KEY_IS_COMPROMISED_DELETE_IT';
             const API_ENDPOINT = 'https://api.runwayml.com/v1/gen2/video'; 
-            
-            // Note: The actual RunwayML API is asynchronous.
-            // 1. You POST to start a generation (gets a task ID).
-            // 2. You GET (poll) the task endpoint until its status is 'succeeded'.
-            // 3. The 'succeeded' response contains the video URL.
-            //
-            // For this exercise, we will *simulate* a simple, single request-response
-            // as implied by the prompt, where the API immediately returns the video URL.
-            // This will NOT work with the real Runway API without modification.
             
             // --- DOM Elements ---
             const generateBtn = document.getElementById('generate-btn');
@@ -207,72 +186,90 @@
             // --- Functions ---
 
             /**
+             * MOCK FUNCTION: Yeh asal API ko call nahi karega.
+             * Yeh 3 second wait kar ke ek fake video URL return karega.
+             * Yeh 'Failed to fetch' (CORS) error ko bypass karne ke liye hai.
+             */
+            function mockFetchAPI(prompt) {
+                console.log(`Mock API call shuru hui... Prompt: "${prompt}"`);
+                
+                return new Promise((resolve, reject) => {
+                    setTimeout(() => {
+                        // Aap yahan test ke liye koi bhi sample video .mp4 URL daal sakte hain
+                        const fakeVideoUrl = 'https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/360/Big_Buck_Bunny_360_10s_1MB.mp4';
+                        
+                        console.log('Mock API call poori hui, fake URL return kar raha hai.');
+                        resolve({ url: fakeVideoUrl });
+
+                        // Error test karne ke liye isko uncomment karein:
+                        // reject(new Error('Mock API Error!'));
+
+                    }, 3000); // 3 second ka fake delay
+                });
+            }
+
+
+            /**
              * Main function to handle the "Generate Video" button click.
              */
             async function handleVideoGeneration() {
                 const prompt = promptInput.value.trim();
 
-                // 1. Validate Input
                 if (!prompt) {
                     showError('Please enter a prompt.');
                     return;
                 }
 
-                // 2. Set UI to Loading State
                 setLoadingState(true);
                 clearResults();
 
                 try {
-                    // 3. Prepare API Request
-                    const requestOptions = {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${API_KEY}`
-                        },
-                        body: JSON.stringify({
-                            prompt: prompt,
-                            // Add other Gen-2 parameters as needed, e.g.:
-                            // "width": 1024,
-                            // "height": 576,
-                            // "seed": 42
-                        })
-                    };
+                    // --- NAYI TABDEELI: Asal fetch ke bajaye MOCK function call ---
+                    
+                    // const data = await realFetchAPI(prompt); // Asal function
+                    const data = await mockFetchAPI(prompt); // Mock function
 
-                    // 4. Call the API
-                    // In a real scenario, this first call would just start the job.
-                    const response = await fetch(API_ENDPOINT, requestOptions);
-
-                    if (!response.ok) {
-                        const errorData = await response.json();
-                        throw new Error(errorData.message || `API Error: ${response.status}`);
-                    }
-
-                    const data = await response.json();
-
-                    // 5. Display Results
-                    // We assume 'data.url' holds the video URL per the prompt's simple flow.
-                    // The real API would require polling a different endpoint using 'data.task_id'.
                     if (data.url) {
                         displayVideo(data.url);
                     } else {
-                        // This will trigger if the simplified flow is used on the real async API
-                        showError('API did not return a video URL directly. (Note: Real API is async)');
-                        console.warn('Received data, but no direct URL:', data);
+                        showError('Mock API ne URL return nahi kiya.');
                     }
 
                 } catch (error) {
                     console.error('Generation Error:', error);
                     showError(error.message || 'An unknown error occurred.');
                 } finally {
-                    // 6. Restore UI from Loading State
                     setLoadingState(false);
                 }
+            }
+            
+            /**
+             * YEH ASAL API CALL HAI - YEH CORS KI WAJAH SE FAIL HOGA
+             * Isko hum ab istemal nahi kar rahe.
+             */
+            async function realFetchAPI(prompt) {
+                const requestOptions = {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${API_KEY}`
+                    },
+                    body: JSON.stringify({ prompt: prompt })
+                };
+
+                // YEH LINE "FAILED TO FETCH" ERROR DEGI
+                const response = await fetch(API_ENDPOINT, requestOptions);
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || `API Error: ${response.status}`);
+                }
+                
+                return await response.json();
             }
 
             /**
              * Updates the UI to show/hide the loader and disable/enable the button.
-             * @param {boolean} isLoading - True to show loader, false to hide.
              */
             function setLoadingState(isLoading) {
                 if (isLoading) {
@@ -295,7 +292,6 @@
 
             /**
              * Creates and embeds a video player for the given URL.
-             * @param {string} url - The URL of the generated video.
              */
             function displayVideo(url) {
                 const videoElement = document.createElement('video');
@@ -310,7 +306,6 @@
 
             /**
              * Displays an error message to the user.
-             * @param {string} message - The error message to show.
              */
             function showError(message) {
                 errorMessage.textContent = message;
