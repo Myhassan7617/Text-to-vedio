@@ -6,6 +6,7 @@
     <title>AI Text to Video</title>
     
     <style>
+        /* CSS styles wahi hain */
         :root {
             --color-bg: #121212;
             --color-surface: #1e1e1e;
@@ -15,12 +16,16 @@
             --color-text-secondary: #aaaaaa;
             --color-border: #333333;
             --color-error: #ff6b6b;
-            --color-success: #28a745; /* Download button ke liye */
+            --color-success: #28a745; 
             --border-radius: 8px;
         }
 
-        /* ... (Baaki saara CSS waisa hi hai) ... */
-        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: var(--color-bg);
@@ -91,7 +96,6 @@
             cursor: not-allowed;
         }
 
-        /* NAYI TABDEELI: Download button ke liye CSS */
         .download-btn {
             display: inline-block;
             text-align: center;
@@ -101,23 +105,21 @@
             font-size: 1rem;
             font-weight: 600;
             color: #ffffff;
-            background-color: var(--color-success); /* Hara rang */
+            background-color: var(--color-success);
             border-radius: var(--border-radius);
-            text-decoration: none; /* Link ka underline hatane ke liye */
+            text-decoration: none;
             transition: background-color 0.2s ease;
         }
 
         .download-btn:hover {
-            background-color: #218838; /* Thora dark hara */
+            background-color: #218838;
         }
-        /* ---- CSS Tabdeeli Khatam ---- */
-
 
         .result-section {
             width: 100%;
-            min-height: 200px; /* Reserve space */
+            min-height: 200px;
             display: flex;
-            flex-direction: column; /* Column mein change kiya taake video aur button oopar neeche aayein */
+            flex-direction: column;
             justify-content: center;
             align-items: center;
             background-color: var(--color-bg);
@@ -136,7 +138,6 @@
             animation: spin 1s linear infinite;
         }
 
-        /* NAYI TABDEELI: Container ko 100% width di */
         #video-container {
             width: 100%;
         }
@@ -179,6 +180,7 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             
+            // SECURITY WARNING: Real API key exposed. Please move this to a secure backend.
             const API_KEY = 'YOUR_API_KEY_IS_COMPROMISED_DELETE_IT';
             const API_ENDPOINT = 'https://api.runwayml.com/v1/gen2/video'; 
             
@@ -190,14 +192,34 @@
 
             generateBtn.addEventListener('click', handleVideoGeneration);
 
+            /**
+             * MOCK FUNCTION: Prompt ki buniyad par alag-alag sample videos return karta hai.
+             * Taa-ke user ko lage ke video badal raha hai.
+             */
             function mockFetchAPI(prompt) {
-                console.log(`Mock API call shuru hui... Prompt: "${prompt}"`);
+                const lowerPrompt = prompt.toLowerCase();
+                let fakeVideoUrl = '';
+
+                // Prompt ke keywords ke hisaab se URL change karein
+                if (lowerPrompt.includes('robot') || lowerPrompt.includes('rain')) {
+                    // Sample Video 1: Big Buck Bunny (Default)
+                    fakeVideoUrl = 'https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/360/Big_Buck_Bunny_360_10s_1MB.mp4';
+                } else if (lowerPrompt.includes('car') || lowerPrompt.includes('road')) {
+                    // Sample Video 2: Sintel (Different Video)
+                    fakeVideoUrl = 'https://test-videos.co.uk/vids/sintel/mp4/h264/360/Sintel_360_10s_1MB.mp4';
+                } else if (lowerPrompt.includes('cat') || lowerPrompt.includes('animal')) {
+                    // Sample Video 3: Tears of Steel (Another Different Video)
+                    fakeVideoUrl = 'https://test-videos.co.uk/vids/tose/mp4/h264/360/Tears_of_Steel_360_10s_1MB.mp4';
+                } else {
+                    // Default fallback video
+                    fakeVideoUrl = 'https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/360/Big_Buck_Bunny_360_10s_1MB.mp4';
+                }
+
+                console.log(`Mock API call shuru hui... Prompt: "${prompt}" -> Using URL: ${fakeVideoUrl}`);
                 
                 return new Promise((resolve, reject) => {
                     setTimeout(() => {
-                        const fakeVideoUrl = 'https://test-videos.co.uk/vids/bigbuckbunny/mp4/h264/360/Big_Buck_Bunny_360_10s_1MB.mp4';
-                        
-                        console.log('Mock API call poori hui, fake URL return kar raha hai.');
+                        console.log('Mock API call poori hui, different fake URL return kar raha hai.');
                         resolve({ url: fakeVideoUrl });
                     }, 3000); 
                 });
@@ -212,6 +234,7 @@
                 setLoadingState(true);
                 clearResults();
                 try {
+                    // Ab 'mockFetchAPI' prompt ke hisaab se video change karega
                     const data = await mockFetchAPI(prompt); 
                     if (data.url) {
                         displayVideo(data.url);
@@ -242,11 +265,7 @@
                 errorMessage.textContent = '';
             }
 
-            /**
-             * NAYI TABDEELI: Creates and embeds a video player AND a download button.
-             */
             function displayVideo(url) {
-                // 1. Video Player banana (jaisa pehle tha)
                 const videoElement = document.createElement('video');
                 videoElement.src = url;
                 videoElement.controls = true;
@@ -254,19 +273,14 @@
                 videoElement.muted = true;
                 videoElement.playsInline = true;
                 
-                // 2. Download Button (Link) banana
                 const downloadLink = document.createElement('a');
                 downloadLink.href = url;
                 downloadLink.textContent = 'Download Video';
-                downloadLink.classList.add('download-btn'); // CSS class jo humne oopar banai
+                downloadLink.classList.add('download-btn');
                 
-                // 'download' attribute browser ko batata hai ke file ko download karna hai
-                // Note: Yeh cross-origin (doosre server) URL ke liye kaam nahi karega.
-                // Browser security ki wajah se video naye tab mein khul jayega.
                 downloadLink.setAttribute('download', 'generated-video.mp4');
-                downloadLink.setAttribute('target', '_blank'); // Fallback: Naye tab mein kholein
+                downloadLink.setAttribute('target', '_blank');
 
-                // 3. Dono ko container mein daalna
                 videoContainer.appendChild(videoElement);
                 videoContainer.appendChild(downloadLink);
             }
