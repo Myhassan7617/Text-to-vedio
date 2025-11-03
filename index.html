@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Text to Video Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 20px;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+            padding: 40px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.5rem;
+            font-weight: 700;
+        }
+
+        .input-section {
+            margin-bottom: 30px;
+        }
+
+        .prompt-input {
+            width: 100%;
+            min-height: 120px;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 1rem;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+
+        .prompt-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .generate-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.1rem;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+            margin-top: 15px;
+            font-weight: 600;
+        }
+
+        .generate-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 7px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .generate-btn:active {
+            transform: translateY(0);
+        }
+
+        .generate-btn:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .video-section {
+            margin-top: 30px;
+            display: none;
+        }
+
+        .video-container {
+            width: 100%;
+            max-width: 640px;
+            margin: 0 auto;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        video {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .loading-spinner {
+            display: none;
+            margin: 30px auto;
+            text-align: center;
+        }
+
+        .spinner {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            color: #e74c3c;
+            background: rgba(231, 76, 60, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .success-message {
+            color: #27ae60;
+            background: rgba(39, 174, 96, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 25px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .generate-btn {
+                padding: 12px 30px;
+                font-size: 1rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 1.7rem;
+            }
+            
+            .prompt-input {
+                min-height: 100px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>AI Text to Video Generator</h1>
+        
+        <div class="input-section">
+            <textarea 
+                class="prompt-input" 
+                placeholder="Describe the video you want to generate... (e.g., 'A serene mountain landscape at sunset with a flowing river')"
+            ></textarea>
+            <button class="generate-btn" id="generateBtn">Generate Video</button>
+        </div>
+        
+        <div class="loading-spinner" id="loadingSpinner">
+            <div class="spinner"></div>
+            <p>Generating your video... This may take a few moments.</p>
+        </div>
+        
+        <div class="error-message" id="errorMessage"></div>
+        <div class="success-message" id="successMessage"></div>
+        
+        <div class="video-section" id="videoSection">
+            <h2>Your Generated Video</h2>
+            <div class="video-container">
+                <video id="generatedVideo" controls>
+                    Your browser does not support the video tag.
+                </video>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // API Configuration
+        const API_KEY = 'key_ea05f66d0d534ba823b589a866782fbbc516979abacdf7d7026c3a31bca8a988b6857de4ed0e0b013eb2d9c69f06678abbb7faa7c828d1c658f94e5f9b81afa7';
+        const API_URL = 'https://api.runwayml.com/v1/gen2/video';
+
+        // DOM Elements
+        const generateBtn = document.getElementById('generateBtn');
+        const promptInput = document.querySelector('.prompt-input');
+        const loadingSpinner = document.getElementById('loadingSpinner');
+        const videoSection = document.getElementById('videoSection');
+        const generatedVideo = document.getElementById('generatedVideo');
+        const errorMessage = document.getElementById('errorMessage');
+        const successMessage = document.getElementById('successMessage');
+
+        // Event listener for generate button
+        generateBtn.addEventListener('click', generateVideo);
+
+        // Function to handle video generation
+        async function generateVideo() {
+            const prompt = promptInput.value.trim();
+            
+            // Validate input
+            if (!prompt) {
+                showError('Please enter a video description.');
+                return;
+            }
+            
+            if (prompt.length < 5) {
+                showError('Please provide a more detailed description (at least 5 characters).');
+                return;
+            }
+            
+            // Reset previous states
+            hideError();
+            hideSuccess();
+            videoSection.style.display = 'none';
+            
+            // Show loading state
+            loadingSpinner.style.display = 'block';
+            generateBtn.disabled = true;
+            generateBtn.textContent = 'Generating...';
+            
+            try {
+                // Make API request
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${API_KEY}`
+                    },
+                    body: JSON.stringify({
+                        prompt: prompt
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`API Error: ${response.status} - ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                
+                // Check if we have a video URL in the response
+                if (data.videoUrl) {
+                    // Set video source and display
+                    generatedVideo.src = data.videoUrl;
+                    videoSection.style.display = 'block';
+                    showSuccess('Video generated successfully!');
+                } else {
+                    throw new Error('No video URL received from API');
+                }
+                
+            } catch (error) {
+                console.error('Error generating video:', error);
+                showError(`Failed to generate video: ${error.message}. Please try again.`);
+            } finally {
+                // Reset loading state
+                loadingSpinner.style.display = 'none';
+                generateBtn.disabled = false;
+                generateBtn.textContent = 'Generate Video';
+            }
+        }
+
+        // Helper functions for showing/hiding messages
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+        }
+
+        function hideError() {
+            errorMessage.style.display = 'none';
+        }
+
+        function showSuccess(message) {
+            successMessage.textContent = message;
+            successMessage.style.display = 'block';
+        }
+
+        function hideSuccess() {
+            successMessage.style.display = 'none';
+        }
+
+        // Allow generating video with Enter key (while holding Ctrl)
+        promptInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && e.ctrlKey) {
+                generateVideo();
+            }
+        });
+    </script>
+</body>
+</html>
